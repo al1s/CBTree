@@ -2,13 +2,9 @@ import { HashRouter as Router, Route, Routes } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import RequireAuth from './Components/Authorization/RequireAuth'
 import Nav from './Components/Nav/Nav'
-import ReactGA from 'react-ga'
-import { Container } from '@chakra-ui/react'
+import { Container, Center, Text, VStack, useBreakpointValue } from '@chakra-ui/react'
 import Providers from './Components/Providers'
 import LoadingTextField from './Components/Loading/LoadingTextField'
-
-ReactGA.initialize('UA-228687787-1')
-ReactGA.pageview('/')
 
 const ThoughtRecordTable = lazy(
 	() => import('./Components/ThoughtRecordDisplay/ThoughtRecordTable'),
@@ -46,119 +42,140 @@ const ThoughtQuestion = lazy(
 	() => import('./Components/ThoughtRecordQuestions/ThoughtQuestion'),
 )
 
+const MobileOnlyGate = () => {
+	const isMobile = useBreakpointValue({ base: true, md: false })
+	if (isMobile === false) {
+		return (
+			<Center minH="100vh" px={6} textAlign="center">
+				<VStack spacing={4} maxW="sm">
+					<Text fontSize="2xl" fontWeight="bold">
+						CBTree is mobile-only
+					</Text>
+					<Text color="whiteAlpha.800">
+						Please open this app on a phone-sized screen to continue.
+					</Text>
+				</VStack>
+			</Center>
+		)
+	}
+	return (
+		<Container p={2} centerContent minH={'100vh'} width="100vw" maxW="480px">
+			<Nav />
+			<Suspense fallback={<LoadingTextField />}>
+				<Routes>
+					<Route path="/" element={<ThoughtRecordExplination />} />
+					<Route
+						path="/profile"
+						element={
+							<RequireAuth>
+								<Profile />
+							</RequireAuth>
+						}
+					/>
+					<Route path="/about" element={<ThoughtRecordExplination />} />
+					<Route
+						path="/thoughtrecords"
+						element={
+							<RequireAuth>
+								<ThoughtRecordTable />
+							</RequireAuth>
+						}
+					/>
+					<Route path="/reset/:resetKey" element={<PasswordReset />} />
+					<Route path="/forgotpassword" element={<ForgotPassword />} />
+					<Route
+						path="/emotion"
+						element={
+							<RequireAuth>
+								<EmotionPicker />
+							</RequireAuth>
+						}
+					/>
+					<Route path="/login" element={<Login />} />
+					<Route
+						path="/rerateemotion"
+						element={
+							<RequireAuth>
+								<EmotionPicker />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/submit"
+						element={
+							<RequireAuth>
+								<SubmitThoughtRecord />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/situationquestion"
+						element={
+							<RequireAuth>
+								<TextFieldQuestion />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/mood"
+						element={
+							<RequireAuth>
+								<FeelingQuestion />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/evidencefor"
+						element={
+							<RequireAuth>
+								<TextFieldQuestion />
+							</RequireAuth>
+						}
+					/>
+
+					<Route
+						path="/evidenceagainst"
+						element={
+							<RequireAuth>
+								<TextFieldQuestion key="rerender" />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/thoughts"
+						element={
+							<RequireAuth>
+								<ThoughtQuestion />
+							</RequireAuth>
+						}
+					/>
+					<Route
+						path="/reratemoods"
+						element={
+							<RequireAuth>
+								<FeelingQuestion />
+							</RequireAuth>
+						}
+					/>
+					<Route path="/signup" element={<Signup />} />
+					<Route
+						path="/alternativethought"
+						element={
+							<RequireAuth>
+								<AlternativeThought />
+							</RequireAuth>
+						}
+					/>
+				</Routes>
+			</Suspense>
+		</Container>
+	)
+}
+
 export const App = () => (
 	<Router>
 		<Providers>
-			<Container p={2} centerContent minH={'70vh'} width="100vw">
-				<Nav />
-				<Suspense fallback={<LoadingTextField />}>
-					<Routes>
-						<Route path="/" element={<ThoughtRecordExplination />} />
-						<Route
-							path="/profile"
-							element={
-								<RequireAuth>
-									<Profile />
-								</RequireAuth>
-							}
-						/>
-						<Route path="/about" element={<ThoughtRecordExplination />} />
-						<Route
-							path="/thoughtrecords"
-							element={
-								<RequireAuth>
-									<ThoughtRecordTable />
-								</RequireAuth>
-							}
-						/>
-						<Route path="/reset/:resetKey" element={<PasswordReset />} />
-						<Route path="/forgotpassword" element={<ForgotPassword />} />
-						<Route
-							path="/emotion"
-							element={
-								<RequireAuth>
-									<EmotionPicker />
-								</RequireAuth>
-							}
-						/>
-						<Route path="/login" element={<Login />} />
-						<Route
-							path="/rerateemotion"
-							element={
-								<RequireAuth>
-									<EmotionPicker />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/submit"
-							element={
-								<RequireAuth>
-									<SubmitThoughtRecord />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/situationquestion"
-							element={
-								<RequireAuth>
-									<TextFieldQuestion />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/mood"
-							element={
-								<RequireAuth>
-									<FeelingQuestion />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/evidencefor"
-							element={
-								<RequireAuth>
-									<TextFieldQuestion />
-								</RequireAuth>
-							}
-						/>
-
-						<Route
-							path="/evidenceagainst"
-							element={
-								<RequireAuth>
-									<TextFieldQuestion key="rerender" />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/thoughts"
-							element={
-								<RequireAuth>
-									<ThoughtQuestion />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/reratemoods"
-							element={
-								<RequireAuth>
-									<FeelingQuestion />
-								</RequireAuth>
-							}
-						/>
-						<Route path="/signup" element={<Signup />} />
-						<Route
-							path="/alternativethought"
-							element={
-								<RequireAuth>
-									<AlternativeThought />
-								</RequireAuth>
-							}
-						/>
-					</Routes>
-				</Suspense>
-			</Container>
+			<MobileOnlyGate />
 		</Providers>
 	</Router>
 )

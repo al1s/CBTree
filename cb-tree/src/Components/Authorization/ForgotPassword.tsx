@@ -1,78 +1,116 @@
-import { Button, Flex, Heading, Input, Text, useToast } from '@chakra-ui/react'
-import React, { useState } from 'react'
-import { userEndPoint } from '../../Utils/api'
+import {
+	Button,
+	Flex,
+	Heading,
+	Input,
+	Text,
+	useToast,
+	FormControl,
+	FormLabel,
+	FormErrorMessage,
+} from '@chakra-ui/react'
+import React from 'react'
+import { useForm, SubmitHandler } from 'react-hook-form'
+import { getUserByUsername, updateStoredUser } from '../../Utils/localStorage'
+import { useNavigate } from 'react-router-dom'
+
+interface FormValues {
+	username: string
+	password: string
+	confirmPassword: string
+}
 
 const ForgotPassword: React.FC = () => {
-	const [emailAddress, setEmailAddress] = useState('')
-	const [isSubmitting, setIsSubmitting] = useState(false)
 	const toast = useToast()
-	const handleOnclick = async () => {
-		if (emailAddress.length > 0) {
-			setIsSubmitting(true)
-			const options: RequestInit = {
-				method: 'POST',
-				body: JSON.stringify({ user_name: emailAddress }),
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json',
-				},
-			}
-			try {
-				const response = await fetch(`${userEndPoint}/reset/`, options)
-				if (response.ok) {
-					toast({
-						status: 'success',
-						description: 'Check your email for your reset link',
-					})
-				}
-				if (response.status === 422) {
-					toast({ status: 'warning', description: 'invalid email address' })
-				}
-				setIsSubmitting(false)
-			} catch {
-				toast({
-					status: 'error',
-					description: 'Something went wrong try again',
-				})
-			}
+	const navigate = useNavigate()
+	const {
+		register,
+		handleSubmit,
+		formState: { errors, isSubmitting },
+	} = useForm<FormValues>()
+
+	const onSubmit: SubmitHandler<FormValues> = (values) => {
+		if (values.password !== values.confirmPassword) {
+			toast({
+				status: 'warning',
+				description: 'Passwords do not match',
+			})
+			return
 		}
+		const existingUser = getUserByUsername(values.username)
+		if (!existingUser) {
+			toast({
+				status: 'error',
+				description: 'No local account found for that username',
+			})
+			return
+		}
+		updateStoredUser(values.username, (user) => ({
+			...user,
+			password: values.password,
+		}))
+		toast({
+			status: 'success',
+			description: 'Password updated. Please sign in again.',
+		})
+		navigate('/login')
 	}
-	const handleOnChange: React.ChangeEventHandler<HTMLInputElement> = (
-		event,
-	) => {
-		setEmailAddress(event.target.value)
-	}
+
 	return (
-		<>
-			<Flex p={2} flexDir={'column'} height={'70vh'} justifyContent={'center'}>
-				<Heading>Forgot your Password </Heading>
-				<Text
-					color="white"
-					m={2}
-					size={'md'}
-					mt={8}
-					w={'full'}
-					textAlign={'left'}
-				>
-					You'll get an email with a reset link
-				</Text>
-				<Input
-					color="white"
-					type={'email'}
-					placeholder="email address"
-					value={emailAddress}
-					onChange={handleOnChange}
-				/>
-				<Button
-					isLoading={isSubmitting}
-					onClick={handleOnclick}
-					mt={10}
-					variant={'submit'}
-				>
-					Submit
+		<Flex p={2} flexDir={'column'} height={'70vh'} justifyContent={'center'}>
+			<Heading>Reset your local password</Heading>
+			<Text
+				color="white"
+				m={2}
+				size={'md'}
+				mt={4}
+				w={'full'}
+				textAlign={'left'}
+			>
+				This app runs fully offline, so resets happen on this device.
+			</Text>
+			<form onSubmit={handleSubmit(onSubmit)}>
+				<FormControl isInvalid={!!errors.username} mt={4}>
+					<FormLabel>Username</FormLabel>
+					<Input
+						color="white"
+						placeholder="username"
+						{...register('username', { required: 'Username is required' })}
+					/>
+					<FormErrorMessage>{errors.username?.message}</FormErrorMessage>
+				</FormControl>
+				<FormControl isInvalid={!!errors.password} mt={4}>
+					<FormLabel>New password</FormLabel>
+					<Input
+						color="white"
+						type={'password'}
+						placeholder="new password"
+						{...register('password', {
+							required: 'Password is required',
+							minLength: { value: 4, message: 'Password is too short' },
+						})}
+					/>
+					<FormErrorMessage>{errors.password?.message}</FormErrorMessage>
+				</FormControl>
+				<FormControl isInvalid={!!errors.confirmPassword} mt={4}>
+					<FormLabel>Confirm password</FormLabel>
+					<Input
+						color="white"
+						type={'password'}
+						placeholder="confirm password"
+						{...register('confirmPassword', {
+							required: 'Please confirm your password',
+						})}
+					/>
+					<FormErrorMessage>
+						{errors.confirmPassword?.message}
+					</FormErrorMessage>
+				</FormControl>
+				<Button isLoading={isSubmitting} mt={6} type="submit" variant={'submit'}>
+					Update password
 				</Button>
-			</Flex>
-		</>
+			</form>
+		</Flex>
 	)
 }
 

@@ -6,14 +6,22 @@ import {
 	useContext,
 	useCallback,
 } from 'react'
-import { isToken, Token, User } from '../types'
-import { userEndPoint } from '../Utils/api'
-import { getAuthHeader } from '../Utils/api'
+import { User } from '../types'
+import {
+	getActiveUsername,
+	getUserByUsername,
+	setActiveUsername,
+	toUser,
+	updateStoredUser,
+	upsertUser,
+	StoredUser,
+} from '../Utils/localStorage'
 
 interface AuthContext {
-	login: (token: Token) => void
+	login: (user: StoredUser) => void
 	logout: () => void
 	currentUser: User | null | false
+	updateUser: (user: User) => void
 }
 
 const authContext = createContext({} as AuthContext)
@@ -23,7 +31,7 @@ const useAuth = () => {
 	const toast = useToast()
 
 	const logout = useCallback(() => {
-		localStorage.removeItem('userToken')
+		setActiveUsername(null)
 		setCurrentUser(false)
 		toast({
 			status: 'success',
@@ -31,54 +39,45 @@ const useAuth = () => {
 		})
 	}, [toast])
 
-	const getUser = useCallback(
-		async (token: Token) => {
-			if (!currentUser) {
-				const response = await fetch(userEndPoint, {
-					...getAuthHeader(),
-				})
-				if (response.ok) {
-					const user = await response.json()
-					if (!currentUser) {
-						setCurrentUser(user)
-					}
-				} else {
-					if (response.status === 401 || 403) {
-						logout()
-					}
-				}
-			}
-		},
-		[currentUser, logout],
-	)
+	const hydrateUser = useCallback(() => {
+		const activeUsername = getActiveUsername()
+		if (!activeUsername) {
+			setCurrentUser(false)
+			return
+		}
+		const storedUser = getUserByUsername(activeUsername)
+		if (storedUser) {
+			setCurrentUser(toUser(storedUser))
+		} else {
+			setCurrentUser(false)
+		}
+	}, [])
 
 	useEffect(() => {
 		if (currentUser === null) {
-			const storageTokenString = localStorage.getItem('userToken')
-			if (storageTokenString !== null) {
-				const storageToken = JSON.parse(storageTokenString)
-				if (isToken(storageToken)) {
-					getUser(storageToken)
-				}
-			} else {
-				setCurrentUser(false)
-			}
+			hydrateUser()
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentUser, hydrateUser])
+
+	const login = useCallback((user: StoredUser) => {
+		upsertUser(user)
+		setActiveUsername(user.username)
+		setCurrentUser(toUser(user))
 	}, [])
 
-	const login = useCallback(
-		(token: Token) => {
-			localStorage.setItem('userToken', JSON.stringify(token))
-			getUser(token)
-		},
-		[getUser],
-	)
+	const updateUser = useCallback((user: User) => {
+		updateStoredUser(user.username, (storedUser) => ({
+			...storedUser,
+			...user,
+		}))
+		setCurrentUser(user)
+	}, [])
 
 	return {
 		currentUser,
 		login,
 		logout,
+		updateUser,
 	}
 }
 export const AuthProvider: React.FC = ({ children }) => {
