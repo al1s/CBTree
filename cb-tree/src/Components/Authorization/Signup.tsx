@@ -19,11 +19,12 @@ import {
 	useNavigate,
 } from 'react-router-dom'
 import { useEffect } from 'react'
-import { signupEndPoint } from '../../Utils/api'
 import { useForm, SubmitHandler } from 'react-hook-form'
 import UserPassFormElements from './UserPassFormElements'
 import useThemeColors from '../../Hooks/useThemeColors'
 import useAuth from '../../Hooks/useAuth'
+import { getUserByUsername } from '../../Utils/localStorage'
+import { StoredUser } from '../../Utils/localStorage'
 
 interface FormValues {
 	firstName?: string
@@ -54,34 +55,24 @@ export default function SignupCard() {
 		}
 	}, [currentUser, navigate, state?.path])
 	const onSubmit: SubmitHandler<FormValues> = async (value) => {
-		try {
-			const response = await fetch(signupEndPoint, {
-				body: JSON.stringify(value),
-				method: 'POST',
-				mode: 'cors',
-				headers: {
-					Accept: 'application/json',
-					'Content-Type': 'application/json',
-				},
-			})
-			if (response.ok) {
-				const token = await response.json()
-				await login(token)
-				navigate('/profile')
-			} else {
-				if (response.status === 400) {
-					toast({
-						status: 'warning',
-						description: 'UserName Already Taken',
-					})
-				}
-			}
-		} catch {
+		const existingUser = getUserByUsername(value.username)
+		if (existingUser) {
 			toast({
-				status: 'error',
-				description: 'Network Error Try Again',
+				status: 'warning',
+				description: 'UserName already taken',
 			})
+			return
 		}
+		const newUser: StoredUser = {
+			username: value.username,
+			password: value.password,
+			firstName: value.firstName,
+			lastName: value.lastName,
+			activeThoughtRecord: null,
+			thoughtRecords: [],
+		}
+		login(newUser)
+		navigate('/profile')
 	}
 	return (
 		<Stack spacing={8} height={'100%'} mx={'auto'} maxW={'lg'} py={12} px={6}>

@@ -1,72 +1,26 @@
-import { Button, Heading, Input, useToast, VStack } from '@chakra-ui/react'
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { userEndPoint } from '../../Utils/api'
+import { Button, Heading, Text, VStack } from '@chakra-ui/react'
+import { useNavigate } from 'react-router-dom'
 
 const PasswordReset: React.FC = () => {
-	const { resetKey } = useParams()
-	const [newPassword, setNewPassword] = useState('')
-	const [isSubmitting, setIsSubmitting] = useState(false)
-	const toast = useToast()
 	const navigate = useNavigate()
 
-	const handleOnClick = async () => {
-		if (newPassword.length > 3) {
-			setIsSubmitting(true)
-			const options: RequestInit = {
-				method: 'POST',
-				body: JSON.stringify({ password: newPassword }),
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json',
-				},
-			}
-			const response = await fetch(`${userEndPoint}/reset/${resetKey}`, options)
-			if (response.ok) {
-				toast({
-					status: 'success',
-					description: 'Password Successfully changed redirecting to login',
-				})
-				navigate('/login')
-			} else {
-				toast({ status: 'error', description: 'reset has expired' })
-				setIsSubmitting(false)
-			}
-		} else {
-			toast({ status: 'warning', description: 'Password is too short' })
-		}
-	}
-	const handleOnChange: React.ChangeEventHandler<HTMLInputElement> = (
-		event,
-	) => {
-		setNewPassword(event.target.value)
-	}
 	return (
-		<>
-			<VStack
-				p={2}
-				spacing={8}
-				justifyContent={'center'}
-				height={'60vh'}
-				flexDir={'column'}
-			>
-				<Heading>Enter a new Password</Heading>
-				<Input
-					color="white"
-					value={newPassword}
-					type="password"
-					onChange={handleOnChange}
-					placeholder="New Password"
-				/>
-				<Button
-					variant="submit"
-					isLoading={isSubmitting}
-					onClick={handleOnClick}
-				>
-					New Password
-				</Button>
-			</VStack>
-		</>
+		<VStack
+			p={2}
+			spacing={6}
+			justifyContent={'center'}
+			height={'60vh'}
+			flexDir={'column'}
+		>
+			<Heading textAlign={'center'}>Reset links are disabled offline</Heading>
+			<Text color="white" textAlign={'center'}>
+				This app runs without external services, so reset links are not used.
+				Update your password directly on this device instead.
+			</Text>
+			<Button variant="submit" onClick={() => navigate('/forgotpassword')}>
+				Go to local reset
+			</Button>
+		</VStack>
 	)
 }
 

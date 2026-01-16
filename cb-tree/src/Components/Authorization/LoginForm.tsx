@@ -11,13 +11,12 @@ import {
 import useAuth from '../../Hooks/useAuth'
 
 import { useForm, SubmitHandler } from 'react-hook-form'
-import { loginEndpoint } from '../../Utils/api'
 import UserPassFormElements from './UserPassFormElements'
 import UseThemeColors from '../../Hooks/useThemeColors'
 import { useEffect } from 'react'
 import { useNavigate, Link as BrowserLink, useLocation } from 'react-router-dom'
 import LoadingTextField from '../Loading/LoadingTextField'
-import { Token } from '../../types'
+import { getUserByUsername } from '../../Utils/localStorage'
 
 interface FormValues {
 	username: string
@@ -48,31 +47,19 @@ const Login: React.FC = () => {
 	}, [currentUser, navigate, state?.path])
 
 	const onSubmit: SubmitHandler<FormValues> = async (value) => {
-		try {
-			const response = await fetch(loginEndpoint, {
-				body: new URLSearchParams({ ...value }),
-				method: 'POST',
-				mode: 'cors',
+		const existingUser = getUserByUsername(value.username)
+		if (!existingUser || existingUser.password !== value.password) {
+			toast({
+				status: 'error',
+				description: 'Incorrect username or password',
 			})
-			if (response.status === 200) {
-				const token: Token = await response.json()
-
-				toast({
-					status: 'success',
-					description: 'Logged in.  Redirecting...',
-				})
-				await login(token)
-			} else {
-				throw new Error('Incorrect Username or Password')
-			}
-		} catch (error) {
-			if (error instanceof Error) {
-				toast({
-					status: 'error',
-					description: error.message,
-				})
-			}
+			return
 		}
+		login(existingUser)
+		toast({
+			status: 'success',
+			description: 'Logged in. Redirecting...',
+		})
 	}
 	if (currentUser === null) {
 		return <LoadingTextField />
